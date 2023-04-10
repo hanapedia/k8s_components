@@ -1,0 +1,30 @@
+- hosts: localhost
+  name: Prepare calico manifests
+  vars:
+    cluster_name: home-cluster
+    calico_operator: https://raw.githubusercontent.com/projectcalico/calico/v3.24.0/manifests/tigera-operator.yaml
+    calico_crd: https://raw.githubusercontent.com/projectcalico/calico/v3.24.0/manifests/custom-resources.yaml
+    pod_cidr: 10.20.0.0/16
+  tasks:
+    - name: Ensure that /tmp/{{ cluster_name }} exists
+      ansible.builtin.file:
+        path: ./{{ cluster_name }}
+        state: directory
+        mode: '1777'
+
+    - name: Download calico manifest
+      ansible.builtin.get_url:
+        url: "{{ item.url }}"
+        dest: "{{ item.name }}"
+        mode: '0644'
+      loop:
+        - name: ./{{ cluster_name }}/calico-operator.yaml
+          url: "{{ calico_operator }}"
+        - name: ./{{ cluster_name }}/calico-crd.yaml
+          url: "{{ calico_crd }}"
+
+    - name: Apply custom CIDR to calico installation manifest
+      ansible.builtin.replace:
+        path: ./{{ cluster_name }}/calico-crd.yaml
+        regexp: 192.168.0.0\/16
+        replace: "{{ pod_cidr }}"

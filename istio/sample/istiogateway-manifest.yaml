@@ -1,0 +1,63 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: foo-gateway
+  namespace: istio-dataplane
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  # ports must be opened by ingressgateway
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+      - "*"
+    # tls:
+    #   httpsRedirect: true # sends 301 redirect for http requests
+  - port:
+      number: 9000 # to expose internal service via external port 2379
+      name: tcp
+      protocol: TCP
+    hosts:
+    - "*"
+
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: tcp-echo-rule
+  namespace: foo
+spec:
+  hosts:
+  - tcp-echo.default.svc.cluster.local
+  gateways:
+  - istio-dataplane/foo-gateway
+  # - mesh # applies to all the sidecars in the mesh
+  tcp:
+  - match:
+    - port: 9000 # port on gateway
+    route:
+    - destination:
+        host: tcp-echo.default.svc.cluster.local
+        port:
+          number: 9000 # port on destionation service
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mongo-vs
+spec:
+  hosts:
+  - '*' # name of internal Mongo service
+  gateways:
+  - istio-dataplane/foo-gateway # can omit the namespace if gateway is in same namespace as virtual service.
+  tcp:
+  - match:
+    - port: 9000
+    route:
+    - destination:
+        host: chain-db
+        port:
+          number: 27017

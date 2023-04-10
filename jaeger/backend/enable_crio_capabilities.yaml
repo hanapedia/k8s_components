@@ -1,0 +1,21 @@
+# vim: set filetype=yaml.ansible :
+# - hosts: single_node
+- hosts: nodes, control_planes
+  name: Reconfigure CRI-O to enable SYS_CHROOT
+  become: true
+  tasks:
+    - name: Fire crio-conf template
+      ansible.builtin.template:
+        src: ./files/crio.conf.j2
+        dest: /etc/crio/crio.conf
+        mode: 0755
+
+    - name: Force systemd to reread configs
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Ensure cri-o is enabled and started
+      ansible.builtin.systemd:
+        name: crio
+        state: started
+        enabled: true

@@ -1,0 +1,29 @@
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: jaeger-prod
+spec:
+  strategy: production
+  collector:
+    maxReplicas: 3
+    resources:
+      limits:
+        cpu: 100m
+        memory: 128Mi
+  storage:
+    type: elasticsearch
+    options:
+      es:
+        server-urls: https://jaeger-backend-es-http.observability.svc:9200
+        index-prefix: jaeger
+        tls: # <3>
+          ca: /es/certificates/ca.crt
+    secretName: jaeger-secret # <4>
+  volumeMounts: # <5>
+    - name: certificates
+      mountPath: /es/certificates/
+      readOnly: true
+  volumes:
+    - name: certificates
+      secret:
+        secretName: jaeger-backend-es-http-certs-public       

@@ -1,0 +1,27 @@
+# vim: set filetype=yaml.ansible :
+# - hosts: single_node
+- hosts: nodes
+  name: Setup iscsid
+  become: true
+  vars:
+    local_hostpath:
+      set: true
+      path: /var/openebs/local
+  tasks:
+    - name: Install iscsi
+      ansible.builtin.apt:
+        name: open-iscsi
+        state: present
+
+    - name: Enable iscsid
+      ansible.builtin.service:
+        name: iscsid
+        enabled: true
+        state: started
+
+    - name: Create hostpath directory for local
+      when: local_hostpath.set
+      ansible.builtin.file:
+        path: local_hostpath.path
+        state: directory
+        mode: '1777'
