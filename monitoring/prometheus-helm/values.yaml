@@ -1,0 +1,14 @@
+# Configuration for kube-prometheus-stack helm chart
+prometheus:
+  prometheusSpec:
+    # configure persistent storage
+    storageSpec: 
+      volumeClaimTemplate:
+       spec:
+         storageClassName: openebs-hostpath 
+         accessModes: ["ReadWriteOnce"]
+         resources:
+           requests:
+             storage: 20Gi
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false

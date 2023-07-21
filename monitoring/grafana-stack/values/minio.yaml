@@ -1,155 +1,148 @@
-minio:
-  ## Provide a name in place of minio for `app:` labels
-  nameOverride: ""
+# minio:
+## Provide a name in place of minio for `app:` labels
+nameOverride: ""
 
-  ## Provide a name to substitute for the full names of resources
-  fullnameOverride: ""
+## Provide a name to substitute for the full names of resources
+fullnameOverride: ""
 
-  ## set kubernetes cluster domain where minio is running
-  clusterDomain: cluster.local
+## set kubernetes cluster domain where minio is running
+clusterDomain: cluster.local
 
-  ## Set default image, imageTag, and imagePullPolicy. mode is used to indicate the
-  image:
-    repository: quay.io/minio/minio
-    tag: RELEASE.2023-05-18T00-05-36Z
-    pullPolicy: IfNotPresent
+## Set default image, imageTag, and imagePullPolicy. mode is used to indicate the
+image:
+  repository: quay.io/minio/minio
+  tag: RELEASE.2023-05-18T00-05-36Z
+  pullPolicy: IfNotPresent
 
-  ## Set default image, imageTag, and imagePullPolicy for the `mc` (the minio
-  ## client used to create a default bucket).
-  mcImage:
-    repository: quay.io/minio/mc
-    tag: RELEASE.2023-05-18T16-59-00Z
-    pullPolicy: IfNotPresent
+## Set default image, imageTag, and imagePullPolicy for the `mc` (the minio
+## client used to create a default bucket).
+mcImage:
+  repository: quay.io/minio/mc
+  tag: RELEASE.2023-05-18T16-59-00Z
+  pullPolicy: IfNotPresent
 
-  ## minio mode, i.e. standalone or distributed
-  mode: distributed ## other supported values are "standalone"
+## minio mode, i.e. standalone or distributed
+mode: standalone ## other supported values are "standalone"
 
-  ## Internal port number for MinIO S3 API container
-  ## Change service.port to change external port number
-  minioAPIPort: "9000"
+## Internal port number for MinIO S3 API container
+## Change service.port to change external port number
+minioAPIPort: "9000"
 
-  ## Internal port number for MinIO Browser Console container
-  ## Change consoleService.port to change external port number
-  minioConsolePort: "9001"
+## Internal port number for MinIO Browser Console container
+## Change consoleService.port to change external port number
+minioConsolePort: "9001"
 
-  ## Set default rootUser, rootPassword
-  ## AccessKey and secretKey is generated when not set
-  ## Distributed MinIO ref: https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html
-  rootUser: ""
-  rootPassword: ""
+## Set default rootUser, rootPassword
+## AccessKey and secretKey is generated when not set
+## Distributed MinIO ref: https://min.io/docs/minio/linux/operations/install-deploy-manage/deploy-minio-multi-node-multi-drive.html
+rootUser: ""
+rootPassword: ""
 
-  ## Use existing Secret that store following variables:
+## Use existing Secret that store following variables:
+##
+## | Chart var             | .data.<key> in Secret    |
+## |:----------------------|:-------------------------|
+## | rootUser              | rootUser                 |
+## | rootPassword          | rootPassword             |
+##
+## All mentioned variables will be ignored in values file.
+## .data.rootUser and .data.rootPassword are mandatory,
+## others depend on enabled status of corresponding sections.
+existingSecret: "minio-secret"
+
+replicas: 1
+## Enable persistence using Persistent Volume Claims
+## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
+persistence:
+  enabled: false
+  annotations: {}
+
+  ## A manually managed Persistent Volume and Claim
+  ## Requires persistence.enabled: true
+  ## If defined, PVC must be created manually before volume will be bound
+  existingClaim: ""
+
+  ## minio data Persistent Volume Storage Class
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
   ##
-  ## | Chart var             | .data.<key> in Secret    |
-  ## |:----------------------|:-------------------------|
-  ## | rootUser              | rootUser                 |
-  ## | rootPassword          | rootPassword             |
-  ##
-  ## All mentioned variables will be ignored in values file.
-  ## .data.rootUser and .data.rootPassword are mandatory,
-  ## others depend on enabled status of corresponding sections.
-  existingSecret: ""
+  ## Storage class of PV to bind. By default it looks for standard storage class.
+  ## If the PV uses a different storage class, specify that here.
+  storageClass: ""
+  volumeName: ""
+  accessMode: ReadWriteOnce
+  size: 500Gi
 
-  ## TLS Settings for MinIO
-  tls:
-    enabled: false
-    ## Create a secret with private.key and public.crt files and pass that here. Ref: https://github.com/minio/minio/tree/master/docs/tls/kubernetes#2-create-kubernetes-secret
-    certSecret: ""
-    publicCrt: public.crt
-    privateKey: private.key
+  ## If subPath is set mount a sub folder of a volume instead of the root of the volume.
+  ## This is especially handy for volume plugins that don't natively support sub mounting (like glusterfs).
+  subPath: ""
 
-  ## Enable persistence using Persistent Volume Claims
-  ## ref: http://kubernetes.io/docs/user-guide/persistent-volumes/
-  persistence:
-    enabled: true
-    annotations: {}
+## Expose the MinIO service to be accessed from outside the cluster (LoadBalancer service).
+## or access it from within the cluster (ClusterIP service). Set the service type and the port to serve it.
+## ref: http://kubernetes.io/docs/user-guide/services/
+service:
+  type: ClusterIP
+  clusterIP: ~
+  port: "9000"
+  nodePort: 32000
+  loadBalancerIP: ~
+  externalIPs: []
+  annotations: {}
 
-    ## A manually managed Persistent Volume and Claim
-    ## Requires persistence.enabled: true
-    ## If defined, PVC must be created manually before volume will be bound
-    existingClaim: ""
+consoleService:
+  type: ClusterIP
+  clusterIP: ~
+  port: "9001"
+  nodePort: 32001
+  loadBalancerIP: ~
+  externalIPs: []
+  annotations: {}
 
-    ## minio data Persistent Volume Storage Class
-    ## If defined, storageClassName: <storageClass>
-    ## If set to "-", storageClassName: "", which disables dynamic provisioning
-    ## If undefined (the default) or set to null, no storageClassName spec is
-    ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
-    ##   GKE, AWS & OpenStack)
-    ##
-    ## Storage class of PV to bind. By default it looks for standard storage class.
-    ## If the PV uses a different storage class, specify that here.
-    storageClass: ""
-    volumeName: ""
-    accessMode: ReadWriteOnce
-    size: 500Gi
+## Configure resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+resources:
+  requests:
+    memory: 1Gi
 
-    ## If subPath is set mount a sub folder of a volume instead of the root of the volume.
-    ## This is especially handy for volume plugins that don't natively support sub mounting (like glusterfs).
-    subPath: ""
+## List of users to be created after minio install
+users:
+  ## Username, password and policy to be assigned to the user
+  ## Default policies are [readonly|readwrite|writeonly|consoleAdmin|diagnostics]
+  ## Add new policies as explained here https://min.io/docs/minio/kubernetes/upstream/administration/identity-access-management.html#access-management
+  ## NOTE: this will fail if LDAP is enabled in your MinIO deployment
+  ## make sure to disable this if you are using LDAP.
+  - accessKey: console
+    secretKey: console123
+    policy: consoleAdmin
+  # Or you can refer to specific secret
+  #- accessKey: externalSecret
+  #  existingSecret: my-secret
+  #  existingSecretKey: password
+  #  policy: readonly
 
-  ## Expose the MinIO service to be accessed from outside the cluster (LoadBalancer service).
-  ## or access it from within the cluster (ClusterIP service). Set the service type and the port to serve it.
-  ## ref: http://kubernetes.io/docs/user-guide/services/
-  service:
-    type: ClusterIP
-    clusterIP: ~
-    port: "9000"
-    nodePort: 32000
-    loadBalancerIP: ~
-    externalIPs: []
-    annotations: {}
+## List of buckets to be created after minio install
 
-  consoleService:
-    type: ClusterIP
-    clusterIP: ~
-    port: "9001"
-    nodePort: 32001
-    loadBalancerIP: ~
-    externalIPs: []
-    annotations: {}
-
-  ## Configure resource requests and limits
-  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
-  resources:
-    requests:
-      memory: 16Gi
-
-  ## List of users to be created after minio install
-  users:
-    ## Username, password and policy to be assigned to the user
-    ## Default policies are [readonly|readwrite|writeonly|consoleAdmin|diagnostics]
-    ## Add new policies as explained here https://min.io/docs/minio/kubernetes/upstream/administration/identity-access-management.html#access-management
-    ## NOTE: this will fail if LDAP is enabled in your MinIO deployment
-    ## make sure to disable this if you are using LDAP.
-    - accessKey: console
-      secretKey: console123
-      policy: consoleAdmin
-    # Or you can refer to specific secret
-    #- accessKey: externalSecret
-    #  existingSecret: my-secret
-    #  existingSecretKey: password
-    #  policy: readonly
-
-  ## List of buckets to be created after minio install
-
-  buckets: []
-    #   # Name of the bucket
-    # - name: bucket1
-    #   # Policy to be set on the
-    #   # bucket [none|download|upload|public]
-    #   policy: none
-    #   # Purge if bucket exists already
-    #   purge: false
-    #   # set versioning for
-    #   # bucket [true|false]
-    #   versioning: false
-    #   # set objectlocking for
-    #   # bucket [true|false] NOTE: versioning is enabled by default if you use locking
-    #   objectlocking: false
-    # - name: bucket2
-    #   policy: none
-    #   purge: false
-    #   versioning: true
-    #   # set objectlocking for
-    #   # bucket [true|false] NOTE: versioning is enabled by default if you use locking
-    #   objectlocking: false
+buckets:
+    # Name of the bucket
+  - name: tempo
+    # Policy to be set on the
+    # bucket [none|download|upload|public]
+    policy: none
+    # Purge if bucket exists already
+    purge: false
+    # set versioning for
+    # bucket [true|false]
+    versioning: false
+    # set objectlocking for
+    # bucket [true|false] NOTE: versioning is enabled by default if you use locking
+    objectlocking: false
+  # - name: bucket2
+  #   policy: none
+  #   purge: false
+  #   versioning: true
+  #   # set objectlocking for
+  #   # bucket [true|false] NOTE: versioning is enabled by default if you use locking
+  #   objectlocking: false
