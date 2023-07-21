@@ -1,0 +1,3 @@
+# Configuration for linkerd/linkerd-viz helm chart
+prometheus:
+  remoteWrite: true
